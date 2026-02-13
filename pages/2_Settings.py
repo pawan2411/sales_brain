@@ -23,6 +23,10 @@ if not is_admin():
 # ─── Custom CSS ───
 st.markdown("""
 <style>
+    /* Hide Streamlit's auto-generated sidebar page links */
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
     .settings-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;

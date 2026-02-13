@@ -19,6 +19,11 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
+    /* Hide Streamlit's auto-generated sidebar page links */
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+
     /* Sidebar styling */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #0f0f23 0%, #1a1a3e 100%);
