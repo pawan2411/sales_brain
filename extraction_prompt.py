@@ -1,4 +1,4 @@
-SYSTEM_PROMPT = """You are a Sales Deal Structuring AI. Your job is to extract and organize information from raw sales conversation text into a structured JSON format that represents a Buying Process.
+DEFAULT_SYSTEM_PROMPT = """You are a Sales Deal Structuring AI. Your job is to extract and organize information from raw sales conversation text into a structured JSON format that represents a Buying Process.
 
 ## The Buying Process Structure
 
@@ -166,9 +166,19 @@ SALES UPDATE TEXT:
 Return the buying_process JSON."""
 
 
+def get_system_prompt() -> str:
+    """Get the system prompt. Returns custom prompt from settings if set, otherwise the default."""
+    from llm_providers import load_settings
+    settings = load_settings()
+    custom = settings.get("system_prompt", "").strip()
+    if custom:
+        return custom
+    return DEFAULT_SYSTEM_PROMPT
+
+
 def build_messages(raw_text: str, existing_deal: dict | None = None) -> list[dict]:
     """Build the message list for LLM API calls."""
     return [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": get_system_prompt()},
         {"role": "user", "content": build_extraction_prompt(raw_text, existing_deal)},
     ]

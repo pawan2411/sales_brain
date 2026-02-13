@@ -25,7 +25,7 @@ if not active_deal:
     st.switch_page("app.py")
     st.stop()
 
-deal_data = load_deal(active_deal)
+deal_data = load_deal(active_deal, st.session_state["username"])
 if not deal_data:
     st.error(f"Deal '{active_deal}' not found.")
     st.stop()
@@ -142,7 +142,7 @@ with tab_input:
                         deal_data["buying_process"] = result
 
                     deal_data = add_update_to_history(deal_data, raw_text, result)
-                    save_deal(active_deal, deal_data)
+                    save_deal(active_deal, deal_data, st.session_state["username"])
                     st.session_state["last_extraction"] = result
 
                     st.success("✅ Deal updated successfully!")

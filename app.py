@@ -133,10 +133,10 @@ with col1:
         if submitted:
             if not new_deal_name:
                 st.error("Please enter a deal name.")
-            elif new_deal_name in list_deals():
+            elif new_deal_name in list_deals(st.session_state["username"]):
                 st.error("A deal with this name already exists.")
             else:
-                create_deal(new_deal_name)
+                create_deal(new_deal_name, st.session_state["username"])
                 st.session_state["active_deal"] = new_deal_name
                 st.success(f"Deal '{new_deal_name}' created!")
                 st.switch_page("pages/1_Deal_Workspace.py")
@@ -144,7 +144,7 @@ with col1:
 # ─── Select Existing Deal ───
 with col2:
     st.markdown("### 📂 Existing Deals")
-    deals = list_deals()
+    deals = list_deals(st.session_state["username"])
     if deals:
         selected = st.selectbox(
             "Select a deal to work on",
@@ -170,7 +170,7 @@ if deals:
 
     metrics_cols = st.columns(min(len(deals), 4))
     for i, deal_name in enumerate(deals[:4]):
-        deal = load_deal(deal_name)
+        deal = load_deal(deal_name, st.session_state["username"])
         if deal:
             steps = deal.get("buying_process", {}).get("buying_steps", [])
             completed = sum(1 for s in steps if s.get("status", "").lower() == "completed")

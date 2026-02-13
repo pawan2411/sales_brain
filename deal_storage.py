@@ -2,7 +2,12 @@ import json
 import os
 from datetime import datetime
 
-DEALS_DIR = os.path.join(os.path.dirname(__file__), "data", "deals")
+DEALS_BASE_DIR = os.path.join(os.path.dirname(__file__), "data", "deals")
+
+
+def _get_user_deals_dir(username: str) -> str:
+    """Get the deals directory for a specific user."""
+    return os.path.join(DEALS_BASE_DIR, username)
 
 EMPTY_DEAL = {
     "deal_name": "",
@@ -35,43 +40,45 @@ EMPTY_BUYING_STEP = {
 }
 
 
-def list_deals() -> list[str]:
-    """List all deal names from the deals directory."""
-    os.makedirs(DEALS_DIR, exist_ok=True)
+def list_deals(username: str) -> list[str]:
+    """List all deal names for a specific user."""
+    user_dir = _get_user_deals_dir(username)
+    os.makedirs(user_dir, exist_ok=True)
     deals = []
-    for fname in sorted(os.listdir(DEALS_DIR)):
+    for fname in sorted(os.listdir(user_dir)):
         if fname.endswith(".json"):
             deals.append(fname.replace(".json", ""))
     return deals
 
 
-def load_deal(deal_name: str) -> dict | None:
-    """Load a deal by name. Returns None if not found."""
-    filepath = os.path.join(DEALS_DIR, f"{deal_name}.json")
+def load_deal(deal_name: str, username: str) -> dict | None:
+    """Load a deal by name for a specific user. Returns None if not found."""
+    filepath = os.path.join(_get_user_deals_dir(username), f"{deal_name}.json")
     if not os.path.exists(filepath):
         return None
     with open(filepath, "r") as f:
         return json.load(f)
 
 
-def save_deal(deal_name: str, deal_data: dict):
-    """Save deal data to a JSON file."""
-    os.makedirs(DEALS_DIR, exist_ok=True)
+def save_deal(deal_name: str, deal_data: dict, username: str):
+    """Save deal data to a JSON file for a specific user."""
+    user_dir = _get_user_deals_dir(username)
+    os.makedirs(user_dir, exist_ok=True)
     deal_data["updated_at"] = datetime.now().isoformat()
-    filepath = os.path.join(DEALS_DIR, f"{deal_name}.json")
+    filepath = os.path.join(user_dir, f"{deal_name}.json")
     with open(filepath, "w") as f:
         json.dump(deal_data, f, indent=2)
 
 
-def create_deal(deal_name: str) -> dict:
-    """Create a new empty deal. Returns the deal data."""
+def create_deal(deal_name: str, username: str) -> dict:
+    """Create a new empty deal for a specific user. Returns the deal data."""
     deal = EMPTY_DEAL.copy()
     deal["deal_name"] = deal_name
     deal["created_at"] = datetime.now().isoformat()
     deal["updated_at"] = deal["created_at"]
     deal["buying_process"] = {"buying_steps": []}
     deal["update_history"] = []
-    save_deal(deal_name, deal)
+    save_deal(deal_name, deal, username)
     return deal
 
 

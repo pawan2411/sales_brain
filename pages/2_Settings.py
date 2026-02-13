@@ -1,6 +1,7 @@
 import streamlit as st
 from llm_providers import load_settings, save_settings, test_connection, get_api_key
 from auth import is_admin
+from extraction_prompt import DEFAULT_SYSTEM_PROMPT
 
 st.set_page_config(
     page_title="Settings | Sales Brain",
@@ -140,6 +141,30 @@ with col3:
         help="e.g. deepseek-chat, deepseek-reasoner",
     )
 
+# ─── System Prompt ───
+st.markdown("---")
+st.markdown("### 📝 System Prompt")
+st.caption("This prompt instructs the AI how to extract and structure deal information. Edit carefully — it controls the quality of deal extraction.")
+
+current_prompt = settings.get("system_prompt", "").strip() or DEFAULT_SYSTEM_PROMPT
+
+prompt_col, reset_col = st.columns([4, 1])
+with reset_col:
+    st.markdown("<br>", unsafe_allow_html=True)
+    reset_prompt = st.button("🔄 Reset to Default", use_container_width=True)
+
+if reset_prompt:
+    current_prompt = DEFAULT_SYSTEM_PROMPT
+    st.toast("Prompt reset to default. Click Save to apply.")
+
+edited_prompt = st.text_area(
+    "System Prompt",
+    value=current_prompt,
+    height=400,
+    label_visibility="collapsed",
+    key="system_prompt_editor",
+)
+
 st.markdown("---")
 
 # ─── Save & Test ───
@@ -152,7 +177,11 @@ with save_col:
             "gemini": {"model": gemini_model, "api_key": gemini_key},
             "together": {"model": together_model, "api_key": together_key},
             "deepseek": {"model": deepseek_model, "api_key": deepseek_key},
+            "system_prompt": edited_prompt.strip(),
         }
+        # Clear system_prompt key if it matches default (no need to store)
+        if new_settings["system_prompt"] == DEFAULT_SYSTEM_PROMPT.strip():
+            new_settings["system_prompt"] = ""
         save_settings(new_settings)
         st.success("✅ Settings saved!")
         st.rerun()
@@ -165,7 +194,10 @@ with test_col:
             "gemini": {"model": gemini_model, "api_key": gemini_key},
             "together": {"model": together_model, "api_key": together_key},
             "deepseek": {"model": deepseek_model, "api_key": deepseek_key},
+            "system_prompt": edited_prompt.strip(),
         }
+        if new_settings["system_prompt"] == DEFAULT_SYSTEM_PROMPT.strip():
+            new_settings["system_prompt"] = ""
         save_settings(new_settings)
 
         with st.spinner(f"Testing {selected_provider}..."):
@@ -187,3 +219,4 @@ st.markdown("""
 """)
 
 st.caption("🔒 API keys are stored in `data/settings.json` (gitignored). For Streamlit Cloud, add them as secrets (GEMINI_API_KEY, TOGETHER_API_KEY, DEEPSEEK_API_KEY).")
+
