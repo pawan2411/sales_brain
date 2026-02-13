@@ -2,6 +2,7 @@
 Generate Mermaid diagrams from deal data to visualize the Buying Process.
 Renders to PNG image via mermaid.ink API.
 """
+from __future__ import annotations
 
 import base64
 import hashlib

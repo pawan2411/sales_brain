@@ -4,6 +4,7 @@ API keys are saved to data/settings.json (gitignored, never in repo).
 Admin sets them via Settings page; all users read from the same file.
 Falls back to st.secrets for Streamlit Cloud deployment.
 """
+from __future__ import annotations
 
 import json
 import os

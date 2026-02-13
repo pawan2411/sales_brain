@@ -1,3 +1,4 @@
+from __future__ import annotations
 DEFAULT_SYSTEM_PROMPT = """You are a Sales Deal Structuring AI. Your job is to extract and organize information from raw sales conversation text into a structured JSON format that represents a Buying Process.
 
 ## The Buying Process Structure
