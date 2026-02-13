@@ -1,5 +1,5 @@
 import streamlit as st
-from llm_providers import load_settings, save_settings, test_connection, get_api_key, set_api_key
+from llm_providers import load_settings, save_settings, test_connection, get_api_key
 from auth import is_admin
 
 st.set_page_config(
@@ -41,6 +41,7 @@ st.markdown("""
 with st.sidebar:
     st.markdown("### ⚙️ Settings")
     st.markdown(f"Logged in as **{st.session_state.get('username', 'User')}**")
+    st.caption("🔑 Admin")
     st.divider()
     if st.button("← Back to Dashboard", use_container_width=True):
         st.switch_page("app.py")
@@ -53,7 +54,7 @@ with st.sidebar:
 st.markdown('<div class="settings-header">⚙️ Settings</div>', unsafe_allow_html=True)
 st.caption("Configure your LLM provider, API keys, and model preferences")
 
-st.info("🔒 **API keys are session-only** — they stay in memory and are never saved to disk. You'll need to re-enter them each time you restart the app.", icon="🔐")
+st.info("🔒 **API keys are stored locally** in `data/settings.json` (gitignored — never pushed to GitHub). All users share the same keys set by admin.", icon="🔐")
 
 settings = load_settings()
 
@@ -84,16 +85,15 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("#### 🔷 Gemini")
-    is_active = selected_provider == "gemini"
-    if is_active:
+    if selected_provider == "gemini":
         st.success("✅ Active provider")
 
     gemini_key = st.text_input(
         "Gemini API Key",
-        value=get_api_key("gemini"),
+        value=settings.get("gemini", {}).get("api_key", ""),
         type="password",
         key="gemini_key_input",
-        help="Get your key from https://aistudio.google.com/apikey\n\n🔒 Session-only, never saved to disk.",
+        help="Get your key from https://aistudio.google.com/apikey",
     )
     gemini_model = st.text_input(
         "Gemini Model",
@@ -104,16 +104,15 @@ with col1:
 
 with col2:
     st.markdown("#### 🟣 Together AI")
-    is_active = selected_provider == "together"
-    if is_active:
+    if selected_provider == "together":
         st.success("✅ Active provider")
 
     together_key = st.text_input(
         "Together API Key",
-        value=get_api_key("together"),
+        value=settings.get("together", {}).get("api_key", ""),
         type="password",
         key="together_key_input",
-        help="Get your key from https://api.together.xyz/settings/api-keys\n\n🔒 Session-only, never saved to disk.",
+        help="Get your key from https://api.together.xyz/settings/api-keys",
     )
     together_model = st.text_input(
         "Together Model",
@@ -124,16 +123,15 @@ with col2:
 
 with col3:
     st.markdown("#### 🔵 DeepSeek")
-    is_active = selected_provider == "deepseek"
-    if is_active:
+    if selected_provider == "deepseek":
         st.success("✅ Active provider")
 
     deepseek_key = st.text_input(
         "DeepSeek API Key",
-        value=get_api_key("deepseek"),
+        value=settings.get("deepseek", {}).get("api_key", ""),
         type="password",
         key="deepseek_key_input",
-        help="Get your key from https://platform.deepseek.com/api_keys\n\n🔒 Session-only, never saved to disk.",
+        help="Get your key from https://platform.deepseek.com/api_keys",
     )
     deepseek_model = st.text_input(
         "DeepSeek Model",
@@ -149,36 +147,24 @@ save_col, test_col = st.columns(2)
 
 with save_col:
     if st.button("💾 Save Settings", use_container_width=True, type="primary"):
-        # Save provider & model preferences to disk (NO API keys)
         new_settings = {
             "provider": selected_provider,
-            "gemini": {"model": gemini_model},
-            "together": {"model": together_model},
-            "deepseek": {"model": deepseek_model},
+            "gemini": {"model": gemini_model, "api_key": gemini_key},
+            "together": {"model": together_model, "api_key": together_key},
+            "deepseek": {"model": deepseek_model, "api_key": deepseek_key},
         }
         save_settings(new_settings)
-
-        # Store API keys in session state only
-        set_api_key("gemini", gemini_key)
-        set_api_key("together", together_key)
-        set_api_key("deepseek", deepseek_key)
-
-        st.success("✅ Settings saved! (API keys in session only)")
+        st.success("✅ Settings saved!")
         st.rerun()
 
 with test_col:
     if st.button("🔗 Test Connection", use_container_width=True):
-        # Temporarily store keys in session for the test
-        set_api_key("gemini", gemini_key)
-        set_api_key("together", together_key)
-        set_api_key("deepseek", deepseek_key)
-
-        # Also save provider/model in case changed
+        # Save first so test uses latest keys
         new_settings = {
             "provider": selected_provider,
-            "gemini": {"model": gemini_model},
-            "together": {"model": together_model},
-            "deepseek": {"model": deepseek_model},
+            "gemini": {"model": gemini_model, "api_key": gemini_key},
+            "together": {"model": together_model, "api_key": together_key},
+            "deepseek": {"model": deepseek_model, "api_key": deepseek_key},
         }
         save_settings(new_settings)
 
@@ -200,4 +186,4 @@ st.markdown("""
 | **DeepSeek** | Cost-effective, strong reasoning | OpenAI-compatible API |
 """)
 
-st.caption("🔒 For Streamlit Cloud deployment, add API keys as secrets (GEMINI_API_KEY, TOGETHER_API_KEY, DEEPSEEK_API_KEY) in your app settings.")
+st.caption("🔒 API keys are stored in `data/settings.json` (gitignored). For Streamlit Cloud, add them as secrets (GEMINI_API_KEY, TOGETHER_API_KEY, DEEPSEEK_API_KEY).")

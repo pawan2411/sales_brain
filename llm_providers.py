@@ -1,75 +1,68 @@
 """
 Unified LLM provider interface.
-API keys are NEVER persisted to disk — they live only in Streamlit session state.
-Provider/model preferences are saved to a local config file.
+API keys are saved to data/settings.json (gitignored, never in repo).
+Admin sets them via Settings page; all users read from the same file.
+Falls back to st.secrets for Streamlit Cloud deployment.
 """
 
 import json
 import os
 import re
-import streamlit as st
 
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "data", "settings.json")
 
 DEFAULT_SETTINGS = {
     "provider": "gemini",
     "gemini": {
-        "model": "gemini-2.5-flash"
+        "model": "gemini-2.5-flash",
+        "api_key": ""
     },
     "together": {
-        "model": "Qwen/Qwen3-Next-80B-A3B-Instruct"
+        "model": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+        "api_key": ""
     },
     "deepseek": {
-        "model": "deepseek-chat"
+        "model": "deepseek-chat",
+        "api_key": ""
     }
 }
 
 
 def load_settings() -> dict:
-    """Load settings from config file (no API keys — those are session-only)."""
+    """Load settings from config file."""
     settings = json.loads(json.dumps(DEFAULT_SETTINGS))  # deep copy
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, "r") as f:
             saved = json.load(f)
-            # Merge saved into defaults
             settings["provider"] = saved.get("provider", settings["provider"])
             for provider in ("gemini", "together", "deepseek"):
                 if provider in saved:
                     settings[provider]["model"] = saved[provider].get("model", settings[provider]["model"])
+                    settings[provider]["api_key"] = saved[provider].get("api_key", "")
     return settings
 
 
 def save_settings(settings: dict):
-    """Save settings to config file. API keys are explicitly excluded."""
+    """Save settings (including API keys) to local config file.
+    This file is gitignored — never pushed to GitHub."""
     os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
-    # Strip any API keys — never persist them
-    safe_settings = {
-        "provider": settings.get("provider", "gemini"),
-        "gemini": {"model": settings.get("gemini", {}).get("model", "gemini-2.5-flash")},
-        "together": {"model": settings.get("together", {}).get("model", "Qwen/Qwen3-Next-80B-A3B-Instruct")},
-        "deepseek": {"model": settings.get("deepseek", {}).get("model", "deepseek-chat")},
-    }
     with open(SETTINGS_FILE, "w") as f:
-        json.dump(safe_settings, f, indent=2)
+        json.dump(settings, f, indent=2)
 
 
 def get_api_key(provider: str) -> str:
-    """Get API key from session state (memory only). Falls back to st.secrets for Streamlit Cloud."""
-    # 1. Check session state (set by user in Settings page)
-    key = st.session_state.get(f"{provider}_api_key", "")
+    """Get API key for a provider. Checks settings file first, then st.secrets."""
+    settings = load_settings()
+    key = settings.get(provider, {}).get("api_key", "")
     if key:
         return key
-    # 2. Fallback to st.secrets (for Streamlit Cloud deployment)
+    # Fallback to st.secrets for Streamlit Cloud
     try:
+        import streamlit as st
         secrets_key = f"{provider.upper()}_API_KEY"
         return st.secrets.get(secrets_key, "")
     except Exception:
         return ""
-
-
-def set_api_key(provider: str, api_key: str):
-    """Store API key in session state only (never on disk)."""
-    st.session_state[f"{provider}_api_key"] = api_key
 
 
 def _parse_json_response(text: str) -> dict:
@@ -159,7 +152,7 @@ def extract_deal_info(messages: list[dict]) -> dict:
     if not api_key:
         raise ValueError(
             f"No API key set for {provider}. "
-            f"Please enter it in the Settings page (keys are session-only, never saved to disk)."
+            f"Please ask your admin to configure it in the Settings page."
         )
 
     call_fn = {
@@ -182,7 +175,7 @@ def test_connection() -> tuple[bool, str]:
     api_key = get_api_key(provider)
 
     if not api_key:
-        return False, f"No API key set for {provider}. Enter it above (session-only)."
+        return False, f"No API key set for {provider}."
 
     try:
         messages = [

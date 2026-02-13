@@ -76,7 +76,7 @@ with st.sidebar:
     st.markdown(f"**API Key:** {'✅ Set' if has_key else '❌ Not set'}")
 
     if not has_key:
-        st.warning("Configure your API key in Settings!")
+        st.warning("API key not set. Ask your admin to configure it.")
 
     st.divider()
     if st.button("← Back to Dashboard", use_container_width=True):
