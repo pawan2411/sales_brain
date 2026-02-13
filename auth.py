@@ -5,6 +5,10 @@ import streamlit as st
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "data", "users.json")
 
+# Hardcoded admin credentials (bcrypt hash of 'admin')
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD_HASH = "$2b$12$mm4R9thjiT0.lJ8njlAdmecUJvk7vPacdWwzWdefT93DF1jWWXQ9W"
+
 
 def _load_users() -> dict:
     """Load users from JSON file."""
@@ -42,11 +46,20 @@ def create_user(username: str, password: str) -> bool:
 
 
 def authenticate(username: str, password: str) -> bool:
-    """Authenticate a user. Returns True if credentials are valid."""
+    """Authenticate a user. Checks admin first, then regular users."""
+    # Check hardcoded admin
+    if username == ADMIN_USERNAME:
+        return verify_password(password, ADMIN_PASSWORD_HASH)
+    # Check regular users
     users = _load_users()
     if username not in users:
         return False
     return verify_password(password, users[username])
+
+
+def is_admin() -> bool:
+    """Check if the current logged-in user is admin."""
+    return st.session_state.get("username") == ADMIN_USERNAME
 
 
 def login_form():
@@ -100,6 +113,8 @@ def login_form():
             if submitted:
                 if not new_username or not new_password:
                     st.error("Please fill in all fields.")
+                elif new_username.lower() == ADMIN_USERNAME:
+                    st.error("This username is reserved.")
                 elif new_password != confirm_password:
                     st.error("Passwords do not match.")
                 elif len(new_password) < 4:

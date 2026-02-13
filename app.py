@@ -1,5 +1,5 @@
 import streamlit as st
-from auth import login_form
+from auth import login_form, is_admin
 from deal_storage import list_deals, create_deal
 
 # ─── Page Config ───
@@ -97,7 +97,13 @@ if not login_form():
 with st.sidebar:
     st.markdown("### 🧠 Sales Brain")
     st.markdown(f"Logged in as **{st.session_state.get('username', 'User')}**")
+    if is_admin():
+        st.caption("🔑 Admin")
     st.divider()
+
+    if is_admin():
+        if st.button("⚙️ Settings", use_container_width=True):
+            st.switch_page("pages/2_Settings.py")
 
     if st.button("🚪 Logout", use_container_width=True):
         for key in list(st.session_state.keys()):

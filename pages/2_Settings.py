@@ -1,5 +1,6 @@
 import streamlit as st
 from llm_providers import load_settings, save_settings, test_connection, get_api_key, set_api_key
+from auth import is_admin
 
 st.set_page_config(
     page_title="Settings | Sales Brain",
@@ -10,6 +11,12 @@ st.set_page_config(
 # ─── Auth check ───
 if not st.session_state.get("authenticated"):
     st.warning("Please log in first.")
+    st.switch_page("app.py")
+    st.stop()
+
+# ─── Admin check ───
+if not is_admin():
+    st.error("⛔ Settings are only accessible to the admin.")
     st.switch_page("app.py")
     st.stop()
 
