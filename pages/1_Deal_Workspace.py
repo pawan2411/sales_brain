@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+from auth import is_admin
 from deal_storage import load_deal, save_deal, add_update_to_history, deal_to_text_summary
 from extraction_prompt import build_messages
 from llm_providers import extract_deal_info, load_settings, get_api_key
@@ -71,12 +72,16 @@ with st.sidebar:
     model = provider_config.get("model", "N/A")
     has_key = bool(get_api_key(provider))
 
-    st.markdown(f"**LLM Provider:** {provider.title()}")
-    st.markdown(f"**Model:** `{model}`")
-    st.markdown(f"**API Key:** {'✅ Set' if has_key else '❌ Not set'}")
-
-    if not has_key:
-        st.warning("API key not set. Ask your admin to configure it.")
+    # Only show LLM details to admin
+    if is_admin():
+        st.markdown(f"**LLM Provider:** {provider.title()}")
+        st.markdown(f"**Model:** `{model}`")
+        st.markdown(f"**API Key:** {'✅ Set' if has_key else '❌ Not set'}")
+        if not has_key:
+            st.warning("Configure your API key in Settings!")
+    else:
+        if not has_key:
+            st.warning("⚠️ AI service not configured. Contact your admin.")
 
     st.divider()
     if st.button("← Back to Dashboard", use_container_width=True):
@@ -122,9 +127,10 @@ with tab_input:
 
     if extract_btn and raw_text:
         if not has_key:
-            st.error("Please configure your API key in the Settings page first.")
+            st.error("AI service not configured. Please contact your admin.")
         else:
-            with st.spinner(f"🤖 Extracting with {provider.title()} ({model})..."):
+            spinner_msg = f"🤖 Extracting with {provider.title()} ({model})..." if is_admin() else "🤖 Analyzing deal update..."
+            with st.spinner(spinner_msg):
                 try:
                     messages = build_messages(raw_text, deal_data)
                     result = extract_deal_info(messages)
